@@ -8,6 +8,9 @@ A game on the Blender game engine. Reshape the forms you can create. Build world
 Networking layer is functional, not complete. To make it work on your system, change the server IP and target IP in the
 text file GlobalDictIni.py inside the .blend file.
 
+If you wish to test it with a friend, head to HTTPFastread.py  and change line 11 to match the IP of the machine that
+is hosting the game.
+
 Create a server by pressing S
 Activate the HTTP components of the server by pressing U
 
