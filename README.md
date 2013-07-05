@@ -5,6 +5,8 @@ Weapons of Mass Creation
 
 NOTE: Currently server functionality achieved only on Linux.
 
+You may need to make the server scripts found in the Extra_python_modules executable by doing 'chmod a+x HTTPServerstuff.py'
+
 A game on the Blender game engine. Reshape the forms you can create. Build worlds with these forms. Connect the worlds.
 
 Networking layer is functional, not complete. To make it work on your system, change the server IP and target IP in the
