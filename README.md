@@ -3,6 +3,8 @@ WoMC
 
 Weapons of Mass Creation
 
+NOTE: Currently server functionality achieved only on Linux.
+
 A game on the Blender game engine. Reshape the forms you can create. Build worlds with these forms. Connect the worlds.
 
 Networking layer is functional, not complete. To make it work on your system, change the server IP and target IP in the
