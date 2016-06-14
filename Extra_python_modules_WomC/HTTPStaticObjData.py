@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.3
+#!/usr/bin/env python3.4
 
 import time
 from http import *
@@ -28,7 +28,12 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         s.end_headers()
     def do_GET(s):        
         #TODO: Adjust file path for different operating systems
-        pickledFile = open(str(os.getcwd().replace('Extra_python_modules','')+'/Forms'),'rb')
+        try:
+            pickledFile = open(str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'Forms',"HFHPickle")),'rb')
+        except FileNotFoundError:
+            print("DEBUG: Must create a new folder for forms, HTTPStaticObjData.py in Extra_python_modules")
+            os.mkdir(str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'Forms')))
+            pickledFile = open(str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'Forms',"HFHPickle")),'rb')
         shared = pickle.load(pickledFile)
         
         s.send_response(200)

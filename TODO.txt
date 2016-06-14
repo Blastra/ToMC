@@ -1,5 +1,7 @@
 
 - TODO LIST -
 
-When the BGE is initialized, the positions of its edges must be determined to find the correct positioning of
+1. Determine what is going wrong with the load/save functions and implement a fix
+
+2. When the BGE is initialized, the positions of its edges must be determined to find the correct positioning of
 the game UI.
