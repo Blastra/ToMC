@@ -17,7 +17,15 @@ If you wish to test it with a friend, head inside the .blend into the GlobalDict
 
 Create a server through the menu presented at game start. 
 
-Create cubes by pressing I
+Create cubes by pressing U
+Save the world by pressing J
+Load the world by pressing L 
+
+Currently only presence of the correct objects works properly, they still need
+to be moved to their respective locations and load the correct mesh 
+deformations.
+
+The cubes should be modifiable by moving your mouse over them
 
 Launch another instance of the game and press "join" to connect to the server.
 
