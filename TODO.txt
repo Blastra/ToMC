@@ -1,7 +1,6 @@
 
 - TODO LIST -
 
-1. Determine what is going wrong with the load/save functions and implement a fix
+1. Implement entering the scene as a player object
 
-2. When the BGE is initialized, the positions of its edges must be determined to find the correct positioning of
-the game UI.
+2. Implement joining the game over a network

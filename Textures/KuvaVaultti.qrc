@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>Connecting Force.jpg</file>
+        <file>ProjectWoMC.jpg</file>
+    </qresource>
+</RCC>
