@@ -1,7 +1,7 @@
-WoMC
+ToMC
 ====
 
-Weapons of Mass Creation
+Tools of Mass Creation
 
 NOTE: Currently server functionality achieved only on Linux.
 
@@ -10,7 +10,7 @@ game.
 
 You may need to make the server scripts found in the Extra_python_modules executable by doing 'chmod a+x HTTPServerstuff.py'
 
-Weapons of Mass Creation is a game on the Blender game engine. Reshape the forms you create. Build worlds with these forms. Connect the worlds.
+Tools of Mass Creation is a game on the Blender game engine. Reshape the forms you create. Build worlds with these forms. Connect the worlds.
 
 The networking should work on your machine out of the box.
 If you wish to test it with a friend, head inside the .blend into the GlobalDictIni.py text file and change the variable gD['ServerIP'] to the host machine IP address.
