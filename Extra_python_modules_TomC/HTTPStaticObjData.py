@@ -7,7 +7,7 @@ import http.server
 import pickle
 import socket
 import os
-
+import sys
 
 
 def getExternalIP():
@@ -28,12 +28,22 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         s.end_headers()
     def do_GET(s):        
         #TODO: Adjust file path for different operating systems
-        try:
-            pickledFile = open(str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'Forms',"HFHPickle")),'rb')
-        except FileNotFoundError:
+        
+        rootPath = os.path.split(os.path.split(sys.argv[0])[0])[0]
+        #print("ROOTPATH: "+rootPath)
+        dirPath = os.path.join(os.path.split(rootPath)[0],"HostingDataForms")
+        #print("DIRPATH: "+dirPath)
+        targetPath = os.path.join(rootPath,'HostingDataForms',"Storage")
+        #print("Trying to find forms folder in the path: "+str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'HostingDataForms',"HFHPickle")))
+        #print("Trying to find HostingDataForms folder in the path: "+targetPath)
+        if os.path.exists(targetPath):
+            pickledFile = open(targetPath,'rb')            
+        else:
             print("DEBUG: Must create a new folder for forms, HTTPStaticObjData.py in Extra_python_modules")
-            os.mkdir(str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'Forms')))
-            pickledFile = open(str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'Forms',"HFHPickle")),'rb')
+            os.mkdir(dirPath)
+            pickledFile = open(targetPath,'wb')
+            pickledFile.close()
+            pickledFile = open(targetPath,'rb')
         shared = pickle.load(pickledFile)
         
         s.send_response(200)

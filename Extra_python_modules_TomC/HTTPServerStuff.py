@@ -7,6 +7,7 @@ import http.server
 import pickle
 import socket
 import os
+import sys
 
 def getExternalIP():
     sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -21,14 +22,16 @@ HOST_NAME = str(getExternalIP())
 
 PORT_NUMBER = 8098
 
+rootPath = os.path.split(os.path.split(sys.argv[0])[0])[0]
+
 class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_HEAD(s):
         s.send_response(200)
         s.send_header("Content-type", "text/html")
         s.end_headers()
-    def do_GET(s):        
-        #TODO: Adjust file path for different operating systems
-        pickledFile = open(str(os.getcwd().replace('Extra_python_modules','')+'/Storage'),'rb')
+    def do_GET(s):
+        
+        pickledFile = open(os.path.join(rootPath,"HostingDataForms",'Storage'),'rb')
         shared = pickle.load(pickledFile)
         
         s.send_response(200)
