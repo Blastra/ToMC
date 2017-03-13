@@ -12,4 +12,4 @@
 'gDFileLocation', (0, 71)
 'Savestring', (512, 0)
 'Savefilefolder', (512, 71)
-'SpawnerValue', (256000, 1)
+'SpawnerValue', (12288, 1)
