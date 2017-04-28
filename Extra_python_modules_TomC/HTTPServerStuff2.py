@@ -31,5 +31,8 @@ class CustomPathHandler(http.server.SimpleHTTPRequestHandler):
 
 Handler = CustomPathHandler
 
-httpd = socketserver.TCPServer((HOST_NAME.replace("'",''), PORT), Handler)
+httpd = socketserver.TCPServer((HOST_NAME.replace("'",''), PORT), Handler, bind_and_activate=False)
+httpd.allow_reuse_address = True
+httpd.server_bind()
+httpd.server_activate()
 httpd.serve_forever()
