@@ -44,14 +44,17 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             pickledFile = open(targetPath,'wb')
             pickledFile.close()
             pickledFile = open(targetPath,'rb')
-        shared = pickle.load(pickledFile)
-        
-        s.send_response(200)
-        s.send_header("Content-type", "text/html")
-        s.end_headers()
-        s.wfile.write(b"<html><head><title>What is altered.</title></head>")
-        s.wfile.write(bytes(shared,'utf-8'))
-        s.wfile.write(b"</body></html>")
+        try:
+            shared = pickle.load(pickledFile)
+            
+            s.send_response(200)
+            s.send_header("Content-type", "text/html")
+            s.end_headers()
+            s.wfile.write(b"<html><head><title>What is altered.</title></head>")
+            s.wfile.write(bytes(shared,'utf-8'))
+            s.wfile.write(b"</body></html>")
+        except EOFError:
+            print("Ran out of input in static object data.")
 
 if __name__ == '__main__':
     server_class = http.server.HTTPServer

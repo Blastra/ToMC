@@ -32,14 +32,16 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(s):
         
         pickledFile = open(os.path.join(rootPath,"HostingDataForms",'Storage'),'rb')
-        shared = pickle.load(pickledFile)
-        
-        s.send_response(200)
-        s.send_header("Content-type", "text/html")
-        s.end_headers()
-        s.wfile.write(b"<html><head><title>The found world.</title></head>")
-        s.wfile.write(bytes(shared,'utf-8'))
-        s.wfile.write(b"</body></html>")
+        try:
+            shared = pickle.load(pickledFile)
+            s.send_response(200)
+            s.send_header("Content-type", "text/html")
+            s.end_headers()
+            s.wfile.write(b"<html><head><title>The found world.</title></head>")
+            s.wfile.write(bytes(shared,'utf-8'))
+            s.wfile.write(b"</body></html>")
+        except EOFError:
+            print("Ran out of world data to read.")        
 
 if __name__ == '__main__':
     server_class = http.server.HTTPServer
