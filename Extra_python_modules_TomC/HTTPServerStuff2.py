@@ -7,17 +7,27 @@ import urllib
 import os
 import sys
 
+#By now the file which contains the server's IP address
+#has been created, use its contents
 
-def getExternalIP():
-    sock = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    sock.connect(('google.com', 80))
-    ip = sock.getsockname()[0]
-    sock.close()
-    return ip
+#Obtain the IP file's path
+
+upperIPpath = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..')) #,os.path.join('Configurations','LocalMachineIPs.txt'))
+fullIPpath = os.path.join(upperIPpath,"Configurations","LocalMachineIPs.txt")
+
+IPFile = open(fullIPpath,'r')
+
+#Read the first line, which contains the local external IP address
+IPLump = IPFile.readlines()
+
+#Pick out the local network IP for use in HTTP server functions
+#Remove the newline symbols as well
+HOST_NAME = IPLump[0].rstrip()
+
+#Close the file
+IPFile.close()
 
 PORT = 8099
-
-HOST_NAME = str(getExternalIP())
 
 rootPath = os.path.split(os.path.split(sys.argv[0])[0])[0]
 path = os.path.join(rootPath,"Worlds")
@@ -30,7 +40,7 @@ Handler.extensions_map.update({
 });
 
 
-httpd = socketserver.TCPServer(("", PORT), Handler,bind_and_activate=False)
+httpd = socketserver.TCPServer((HOST_NAME, PORT), Handler,bind_and_activate=False)
 httpd.allow_reuse_address = True
 httpd.server_bind()
 httpd.server_activate()
