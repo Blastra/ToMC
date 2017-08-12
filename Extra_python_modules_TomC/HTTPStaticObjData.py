@@ -43,7 +43,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         #print("ROOTPATH: "+rootPath)
         dirPath = os.path.join(os.path.split(rootPath)[0],"HostingDataForms")
         #print("DIRPATH: "+dirPath)
-        targetPath = os.path.join(rootPath,'HostingDataForms',"Storage")
+        targetPath = os.path.join(rootPath,'HostingDataForms',"Forms")
         #print("Trying to find forms folder in the path: "+str(os.path.join(os.getcwd().replace('Extra_python_modules',''),'HostingDataForms',"HFHPickle")))
         #print("Trying to find HostingDataForms folder in the path: "+targetPath)
         if os.path.exists(targetPath):
@@ -56,7 +56,8 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             pickledFile = open(targetPath,'rb')
         try:
             shared = pickle.load(pickledFile)
-            
+            global backupForms
+            backupForms = shared
             s.send_response(200)
             s.send_header("Content-type", "text/html")
             s.end_headers()
@@ -65,6 +66,12 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             s.wfile.write(b"</body></html>")
         except EOFError:
             print("Ran out of input in static object data.")
+            s.send_response(200)
+            s.send_header("Content-type", "text/html")
+            s.end_headers()
+            s.wfile.write(b"<html><head><title>What is altered.</title></head>")
+            s.wfile.write(bytes(backupForms,'utf-8'))
+            s.wfile.write(b"</body></html>")
 
 if __name__ == '__main__':
     server_class = http.server.HTTPServer

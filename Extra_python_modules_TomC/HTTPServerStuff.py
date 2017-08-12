@@ -9,6 +9,7 @@ import socket
 import os
 import sys
 
+
 #By now the file which contains the server's IP address
 #has been created, use its contents
 
@@ -47,6 +48,10 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         pickledFile = open(os.path.join(rootPath,"HostingDataForms",'Storage'),'rb')
         try:
             shared = pickle.load(pickledFile)
+            #Store the sent message in case EOF occurs
+            #as a result of rewriting the file being rewritten
+            global storedPrevious
+            storedPrevious = shared
             s.send_response(200)
             s.send_header("Content-type", "text/html")
             s.end_headers()
@@ -54,7 +59,17 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             s.wfile.write(bytes(shared,'utf-8'))
             s.wfile.write(b"</body></html>")
         except EOFError:
-            print("Ran out of world data to read.")        
+            print("Ran out of world data to read.")
+            #Errors caused by EOFErros is causing Python script repetition
+            #to be halted by RemoteDisconnected errors - storing a previous,
+            #functional version of the data may be a solution
+            s.send_response(200)
+            s.send_header("Content-type", "text/html")
+            s.end_headers()
+            s.wfile.write(b"<html><head><title>The found world.</title></head>")
+            s.wfile.write(bytes(storedPrevious,'utf-8'))
+            s.wfile.write(b"</body></html>")
+            #httpd.server_close()
 
 if __name__ == '__main__':
     server_class = http.server.HTTPServer
