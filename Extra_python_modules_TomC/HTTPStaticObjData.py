@@ -73,6 +73,9 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             s.wfile.write(bytes(backupForms,'utf-8'))
             s.wfile.write(b"</body></html>")
 
+    def log_message(self, format, *args):
+        return
+
 if __name__ == '__main__':
     server_class = http.server.HTTPServer
     httpd = server_class((HOST_NAME.replace("'",''), PORT_NUMBER), MyHandler)

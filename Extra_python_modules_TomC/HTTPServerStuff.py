@@ -70,6 +70,8 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             s.wfile.write(bytes(storedPrevious,'utf-8'))
             s.wfile.write(b"</body></html>")
             #httpd.server_close()
+    def log_message(self, format, *args):
+        return
 
 if __name__ == '__main__':
     server_class = http.server.HTTPServer
