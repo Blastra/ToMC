@@ -12,20 +12,22 @@ You may need to make the server scripts found in the Extra_python_modules execut
 
 Tools of Mass Creation is a game on the Blender game engine. Reshape the forms you create. Build worlds with these forms. Connect the worlds.
 
-The networking should work on your machine out of the box.
+The networking should work on your machines out of the box.
 If you wish to test it with a friend, head inside the .blend into the GlobalDictIni.py text file and change the variable gD['ServerIP'] to the host machine IP address.
+
+Firewalls may prevent the UDP messages of clients from getting through to the server.
 
 Create a server through the menu presented at game start. 
 
 Create cubes by pressing U
 Save the world by pressing J
-Load the world by pressing L 
+Load the world by pressing F8
+Change the spawn object to cylinder by pressing T
 
-Currently only presence of the correct objects works properly, they still need
-to be moved to their respective locations and load the correct mesh 
-deformations.
+Spatial and mesh deformation data synchronization are functional for
+nonplayer objects.
 
-The cubes should be modifiable by moving your mouse over them
+Altering meshes is done by mouseovering on the cubes or cylinders.
 
 Launch another instance of the game and press "join" to connect to the server.
 
