@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3.7
 """
 This module is designed to fetch your external IP address from the internet.
 It is used mostly when behind a NAT.
