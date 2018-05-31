@@ -8,26 +8,6 @@ import time
 import random
 import pickle
 
-for i in sys.argv:
-    print("sys.argv["+str(sys.argv.index(i))+"]: "+str(i))
-
-picklePath = os.path.join(sys.argv[6],sys.argv[7])
-
-print("picklePath: "+str(picklePath))
-
-#Take the target file name and target object name and open a corresponding pickle file
-with open(picklePath,"rb") as handle:
-    #Load the pickled contents
-    loadedObj = pickle.load(handle)
-    handle.close()
-
-#print(loadedObj)
-
-#Retrieve the vertices from the pickle file
-finalVerts = loadedObj["Vertices"]
-
-#Prepare a list to store the final faces
-finalFaces = loadedObj["Faces"]
 
 """
 #Go through the polygon strings
@@ -39,21 +19,20 @@ for fa in faces:
     #Turn the lists into tuples which contain integers
     finalFaces.append(tuple(map(int,fa)))
 """
-#print("Final version of faces: "+str(finalFaces))
 
 def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
 
     #Save name core comes from Blender as an argument
     saveNameFrame = objName
 
-    
-    #saveName = os.path.join(sys.argv[6],sys.argv[5]+".blend")
-
     #Add the mesh object to the scene at origin
     bpy.ops.object.add(
         type = 'MESH',
         enter_editmode=False,
         location=position)
+
+    #Rotate the target mesh accordingly
+    
 
     #Store the object in the blender scene
     #for targeting
@@ -155,13 +134,59 @@ def CarveBoolean(resultName,
     return carveTarget
 
 
+
+
+########## INPUT VALUE REFERENCE STARTS ############
+
+0: gD["blenderPath"],           #path to blender
+1: str(tarFilePath),            #Full file path of the pickle file
+                                #(verts, faces)
+2: "-b",                        #backround mode of Blender
+3: "--python",                  #Use Python to drive Blender
+4: str(scriptPath),             #Full path of the Python script to run
+5: str(carveTarget.name),       #Name of the carve target
+6: str(carveTool.name),         #Name of the carving tool
+7: str(gD['ObjLibraryFolder']), #Full path of the storage folder
+8: saveName]                    #Name of the save file
+
+########### INPUT VALUE REFERENCE ENDS ##############
+
 ##### RUNNING THE FUNCTIONS STARTS HERE ########
 
+
+
+for i in sys.argv:
+    print("sys.argv["+str(sys.argv.index(i))+"]: "+str(i))
+
+picklePath = os.path.join(sys.argv[6],sys.argv[7])
+
+print("picklePath: "+str(picklePath))
+
+#Take the target file name and target object name and open a corresponding pickle file
+with open(picklePath,"rb") as handle:
+    #Load the pickled contents
+    loadedObj = pickle.load(handle)
+    handle.close()
+
+#print(loadedObj)
+
+#Retrieve the vertices from the pickle file
+finalVerts = loadedObj["Vertices"]
+
+#Prepare a list to store the final faces
+finalFaces = loadedObj["Faces"]
+
+#Locally store the arguments according to the input given by BooleanCarve.py
+
+#Store the target object and tool orientations locally
+orient = loadedObj["targetOrientation"]
+toolOrient = loadedObj["toolOrientation"]
+
 #Create the carve target object at origo
-carTarg = CreateObjectOnScene(carveTarget,objVerts,objFaces,(0,0,0),orient)
+carTarg = CreateObjectOnScene(sys.argv[5],loadedObj["targVerts"],loadedObj["targFaces"],(0,0,0),orient)
 
 #Create the carver 
-carver = CreateObjectOnScene(carverTool,objVerts,objFaces,toolPos,toolOrient)
+carver = CreateObjectOnScene(sys.argv[6],objVerts,objFaces,toolPos,toolOrient)
 
 #Perform the boolean carve
 carvedObject = CarveBoolean("TestCarve",carTarg,carver)
