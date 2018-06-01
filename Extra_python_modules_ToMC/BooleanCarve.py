@@ -22,6 +22,13 @@ for fa in faces:
 
 def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
 
+    print("objName: "+str(objName))
+    print("objVerts: "+str(objVerts))
+    print("objFaces: "+str(objFaces))
+    print("position: "+str(position))
+    print("orient: "+str(orient))
+
+
     #Save name core comes from Blender as an argument
     saveNameFrame = objName
 
@@ -68,7 +75,7 @@ def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
     curObjs.append(me.name)
 
     #Apply the vertex and face data for the generation
-    me.from_pydata(finalVerts, [], finalFaces)
+    me.from_pydata(objVerts, [], objFaces)
 
     #Call update on the scene
     #NOTE: possibly not needed, obtained from the INFO window
@@ -77,8 +84,8 @@ def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
 
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    #Destination file path of the STL file is stored, add the STL folder to the file path and change the suffix to stl
-    destFilePath = os.path.join(sys.argv[7].replace(sys.argv[6],os.path.join(sys.argv[6],"STL")).replace(".pickle",".stl"))
+    #Destination file path of the object library folder to the file path and change the suffix to blend
+    destFilePath = os.path.join(sys.argv[8].replace(".pickle",".blend"))
     
     #extra = bpy.data.objects[saveName+str(".001")]
 
@@ -138,6 +145,7 @@ def CarveBoolean(resultName,
 
 ########## INPUT VALUE REFERENCE STARTS ############
 
+"""
 0: gD["blenderPath"],           #path to blender
 1: str(tarFilePath),            #Full file path of the pickle file
                                 #(verts, faces)
@@ -148,6 +156,7 @@ def CarveBoolean(resultName,
 6: str(carveTool.name),         #Name of the carving tool
 7: str(gD['ObjLibraryFolder']), #Full path of the storage folder
 8: saveName]                    #Name of the save file
+"""
 
 ########### INPUT VALUE REFERENCE ENDS ##############
 
@@ -158,7 +167,7 @@ def CarveBoolean(resultName,
 for i in sys.argv:
     print("sys.argv["+str(sys.argv.index(i))+"]: "+str(i))
 
-picklePath = os.path.join(sys.argv[6],sys.argv[7])
+picklePath = os.path.join(sys.argv[7],sys.argv[8])
 
 print("picklePath: "+str(picklePath))
 
@@ -170,26 +179,30 @@ with open(picklePath,"rb") as handle:
 
 #print(loadedObj)
 
-#Retrieve the vertices from the pickle file
-finalVerts = loadedObj["Vertices"]
+#Retrieve the vertices and faces of the target object from the pickle file
+targVerts = loadedObj["targVerts"]
+targFaces = loadedObj["targFaces"]
 
-#Prepare a list to store the final faces
-finalFaces = loadedObj["Faces"]
+#Retrieve the vertices and faces of the tool object from the pickle file
+toolVerts = loadedObj["toolVerts"]
+toolFaces = loadedObj["toolFaces"]
+
+#Retrieve the orientation of the target object and the carve tool object
+targOrient = loadedObj["targetOrientation"]
+toolOrient = loadedObj["toolOrientation"]
+
+toolPos = loadedObj["toolDistance"]
 
 #Locally store the arguments according to the input given by BooleanCarve.py
 
-#Store the target object and tool orientations locally
-orient = loadedObj["targetOrientation"]
-toolOrient = loadedObj["toolOrientation"]
-
 #Create the carve target object at origo
-carTarg = CreateObjectOnScene(sys.argv[5],loadedObj["targVerts"],loadedObj["targFaces"],(0,0,0),orient)
+carTarg = CreateObjectOnScene(sys.argv[5],targVerts,targFaces,(0,0,0),targOrient)
 
 #Create the carver 
-carver = CreateObjectOnScene(sys.argv[6],objVerts,objFaces,toolPos,toolOrient)
+carver = CreateObjectOnScene(sys.argv[6],toolVerts,toolFaces,(0.5,0,0),toolOrient)
 
 #Perform the boolean carve
-carvedObject = CarveBoolean("TestCarve",carTarg,carver)
+carvedObject = CarveBoolean("TestCarve",carTarg,targOrient,carver,toolPos,toolOrient)
 
 #Save the current open file
 bpy.ops.wm.save_as_mainfile("TestCarveFile.blend", check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
