@@ -38,16 +38,15 @@ def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
         enter_editmode=False,
         location=position)
 
-    #Rotate the target mesh accordingly
+    #TODO: Rotate the target mesh accordingly
     
-
     #Store the object in the blender scene
     #for targeting
     obj = bpy.context.object
 
     #Give the object its name as seen in Blender's
     #Properties window
-    obj.name = saveNameFrame
+    obj.name = os.path.split(saveNameFrame)[-1].replace(".blend","")
 
     #Store the object data for targeting
     me = obj.data
@@ -67,9 +66,9 @@ def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
     #are not created
 
     if saveNameFrame+'Mesh' not in curObjs:
-        me.name = saveNameFrame+'Mesh'        
+        me.name = os.path.split(saveNameFrame)[-1].replace(".blend","")+'Mesh'        
     else:
-        me.name = saveNameFrame+'AltMesh'
+        me.name = os.path.split(saveNameFrame)[-1].replace(".blend","")+'AltMesh'
 
     #Keep the object name list up to date
     curObjs.append(me.name)
@@ -85,16 +84,54 @@ def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
     bpy.ops.object.mode_set(mode='OBJECT')
 
     #Destination file path of the object library folder to the file path and change the suffix to blend
-    destFilePath = os.path.join(sys.argv[8].replace(".pickle",".blend"))
+    #destFilePath = os.path.join(objName.replace(".pickle",".blend"))
     
     #extra = bpy.data.objects[saveName+str(".001")]
 
     objs = bpy.data.objects
 
-    #Remove the extra unaltered mesh object which is generated
-    #NOTE: reason for this behavior is unknown
-    if saveNameFrame+".001" in objs:
-        objs.remove(objs[saveNameFrame+".001"],True)
+    #Select the modified mesh version
+    bpy.data.objects[obj.name].select = True
+
+    #Activate edit mode
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    #Remove vertex duplicates
+    bpy.ops.mesh.remove_doubles()
+
+    #Convert all mesh faces to triangles
+    bpy.ops.mesh.quads_convert_to_tris()
+    
+
+    #Recalculate the normals of the mesh
+    bpy.ops.mesh.normals_make_consistent()
+
+    #Deactivate edit mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    #If the object in question is the carve target, it's on the scene first
+    if obj.name+".001" in bpy.data.objects:
+
+        #Select the object's unmodified duplicate
+        #which contains all of the game logic
+        objs[obj.name+".001"].select = True
+        
+        bpy.context.scene.objects.active = bpy.data.objects[obj.name+".001"]
+
+        #Copy game properties
+        #TODO: Copy all properties instead of only ObjID
+        bpy.ops.object.game_property_copy(property='ObjID')
+    
+        #Copy the logic bricks from the .001 copy to the final object
+        bpy.ops.object.logic_bricks_copy()
+
+        #Remove the extra unaltered mesh object which is generated
+        #NOTE: reason for this behavior is unknown
+
+        objs[obj.name+".001"].select = False
+
+        #if obj.name+".001" in objs:
+        objs.remove(objs[obj.name+".001"],True)
 
     #Finally return the object itself for further alterations 
 
@@ -109,39 +146,90 @@ def CarveBoolean(resultName,
                  toolPos,
                  toolOrient):
     
-    #Open the modifier menu
-    bpy.context.space_data.context = 'MODIFIER'
+    cTar = bpy.data.objects[0]
+    cTool = bpy.data.objects[1]
 
-    #Create a boolean modifier to the carveTarget object
-    bpy.ops.object.modifier_add(type='BOOLEAN')
+    ######## ENSURING THE INTENDED FUNCTIONALITY OF THE BOOLEAN OPERATION BEGINS HERE ######
+        
+    #Select the carve target as active
+    carveTarget.select = True
+
+    #Activate edit mode
+    bpy.ops.object.mode_set(mode='EDIT')
+    
+    #Convert all mesh faces to triangles
+    bpy.ops.mesh.quads_convert_to_tris()
+
+    #Activate vertex selection
+    bpy.ops.mesh.select_mode(type="VERT")
+
+    #Select all faces of the carve target mesh
+    bpy.ops.mesh.select_all(action='TOGGLE')
+
+    #Recalculate normals of the carve target
+    bpy.ops.mesh.normals_make_consistent()
+
+    #Deactivate edit mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    #Select the carve tool
+    carverTool.select = True
+    carveTarget.select = False
+
+    #Activate edit mode
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_mode(type="VERT")
+
+    #Select all faces of the carve target mesh
+    bpy.ops.mesh.select_all(action='TOGGLE')
+    
+    #Recalculate normals of the carve tool
+    bpy.ops.mesh.normals_make_consistent()  
+    
+    #Deactivate edit mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    ######## ENSURING THE INTENDED FUNCTIONALITY OF THE BOOLEAN OPERATION ENDS HERE ######
+    
+    #Create a new boolean modifier named Boolean
+    carvBool = cTar.modifiers.new("Boolean","BOOLEAN")
 
     #Choose the boolean type to remove the intersecting volume of
     #carvertool from carveTarget
-    bpy.context.object.modifiers["Boolean"].operation = 'DIFFERENCE'
-
-    #Apply the role of the carverTool in the operation
-    bpy.context.object.modifiers["Boolean"].object = bpy.data.objects[carverTool]
     
-    #Change the boolean solver to Carve
-    bpy.context.object.modifiers["Boolean"].solver = 'CARVE'
+    carvBool.operation = 'DIFFERENCE'
+    
+    #Apply the role of the carverTool in the operation
+    carvBool.object = cTool #str(carveTool)
+        
+    #Change the boolean solver to Carve    
+    carvBool.solver = 'CARVE'
+
+    #Explicitly select the carveTarget for applying the boolean modifier
+    bpy.context.scene.objects.active = carveTarget
 
     #Apply the boolean modifier
     bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
 
-    #Obtain the current scene
+    #Setup rigid body physics
+    bpy.context.object.game.physics_type = 'RIGID_BODY'
 
-    #Select the carverTool object
-    bpy.context.object = sce.objects
+    #Activate collision bounds
+    bpy.context.object.game.use_collision_bounds = True
+
+    #Use triangle mesh
+    bpy.context.object.game.collision_bounds_type = 'TRIANGLE_MESH'
+    
+    print("Applied boolean modified with carveTarget at "+str(carveTarget.location)+" and carve tool at "+str(carverTool.location))
+
+    #Select the carverTool object    
+    carverTool.select = True
+
+    #Deselect carve target
+    carveTarget.select = False
 
     #Remove the carverTool
     bpy.ops.object.delete(use_global=False)
-
-    #Return the carve target object
-
-    return carveTarget
-
-
-
 
 ########## INPUT VALUE REFERENCE STARTS ############
 
@@ -162,12 +250,23 @@ def CarveBoolean(resultName,
 
 ##### RUNNING THE FUNCTIONS STARTS HERE ########
 
+carveTarName = os.path.split(str(sys.argv[5]))[-1]
+carveToolName = os.path.split(str(sys.argv[6]))[-1]
 
+objLibPath = str(sys.argv[7])
+saveName = str(sys.argv[8])
 
-for i in sys.argv:
-    print("sys.argv["+str(sys.argv.index(i))+"]: "+str(i))
+print("objLibPath + saveName: "+str(objLibPath+saveName))
 
-picklePath = os.path.join(sys.argv[7],sys.argv[8])
+tarObjPath = os.path.join(objLibPath,carveTarName+".blend")
+toolPath = os.path.join(objLibPath,"ArchetypeCylinder.blend")
+
+#for i in sys.argv:
+#    print("sys.argv["+str(sys.argv.index(i))+"]: "+str(i))
+
+picklePath = os.path.join(str(sys.argv[7]),"GeneratedPickles",str(sys.argv[8]))
+#picklePath = sys.argv[8]
+
 
 print("picklePath: "+str(picklePath))
 
@@ -196,83 +295,34 @@ toolPos = loadedObj["toolDistance"]
 #Locally store the arguments according to the input given by BooleanCarve.py
 
 #Create the carve target object at origo
-carTarg = CreateObjectOnScene(sys.argv[5],targVerts,targFaces,(0,0,0),targOrient)
+carTarg = CreateObjectOnScene(tarObjPath,targVerts,targFaces,(0,0,0),targOrient)
+#carTarg = CreateObjectOnScene(sys.argv[5],targVerts,targFaces,(0,0,0),targOrient)
 
-#Create the carver 
-carver = CreateObjectOnScene(sys.argv[6],toolVerts,toolFaces,(0.5,0,0),toolOrient)
+#Create the carver
+#TODO: Change the value (0.5,0,0) to use input given by the bge
+carver = CreateObjectOnScene(toolPath,toolVerts,toolFaces,(0.5,0,0),toolOrient)
+#carver = CreateObjectOnScene(sys.argv[6],toolVerts,toolFaces,(0.5,0,0),toolOrient)
 
-#Perform the boolean carve
-carvedObject = CarveBoolean("TestCarve",carTarg,targOrient,carver,toolPos,toolOrient)
+
+carvedObject = CarveBoolean(saveName,
+                            carTarg,
+                            targOrient,
+                            carver,
+                            toolPos,
+                            toolOrient)
+
+fiName = os.path.split(saveName)[1].replace(".pickle",".blend")
+blendSavePath = os.path.join(objLibPath,fiName)
 
 #Save the current open file
-bpy.ops.wm.save_as_mainfile("TestCarveFile.blend", check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
-#bpy.ops.wm.save_as_mainfile(filepath=sys.argv[7].replace(".pickle",".blend"), check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
+bpy.ops.wm.save_as_mainfile(filepath=blendSavePath, check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
+
+#Remove the pickle file from ObjectLibrary
+#os.remove(picklePath)
 
 #Shut down the backround Blender
 bpy.ops.wm.quit_blender()
 
+#Communicate to BGE that the carved object is ready to be imported
+
 ##### RUNNING THE FUNCTIONS ENDS HERE ########
-
-
-#### OLD SCRIPT STARTS HERE ######################
-
-"""
-
-#Save name core comes from Blender as an argument
-saveNameFrame = sys.argv[5]
-
-saveName = os.path.join(sys.argv[6],sys.argv[5]+".blend")
-
-#Add the mesh object to the scene at origin
-bpy.ops.object.add(
-    type = 'MESH',
-    enter_editmode=False,
-    location=(0,0,0))
-
-#Store the object in the blender scene
-#for targeting
-obj = bpy.context.object
-
-#Give the object its name as seen in Blender's
-#Properties window
-obj.name = saveNameFrame
-
-#Store the object data for targeting
-me = obj.data
-
-me.name = saveNameFrame+'Mesh'
-
-#Apply the vertex and face data for the generation
-me.from_pydata(finalVerts, [], finalFaces)
-
-#Call update on the scene
-#NOTE: possibly not needed, obtained from the INFO window
-#of Blender in the first place
-me.update()
-
-bpy.ops.object.mode_set(mode='OBJECT')
-
-#Destination file path of the STL file is stored, add the STL folder to the file path and change the suffix to stl
-destFilePath = os.path.join(sys.argv[7].replace(sys.argv[6],os.path.join(sys.argv[6],"STL")).replace(".pickle",".stl"))
-
-scene = bpy.context.scene
-
-#extra = bpy.data.objects[saveName+str(".001")]
-
-objs = bpy.data.objects
-
-#Remove the extra unaltered mesh object which is generated
-#NOTE: reason for this behavior is unknown
-if saveNameFrame+".001" in objs:
-    objs.remove(objs[saveNameFrame+".001"],True)
-
-#Save the blend file
-bpy.ops.wm.save_as_mainfile(filepath=sys.argv[7].replace(".pickle",".blend"), check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
-
-#Save the STL file
-#bpy.ops.export_mesh.stl(filepath=destFilePath,check_existing=True,axis_forward="Y",axis_up="Z",filter_glob="*.stl",use_selection=False,global_scale=1.0,use_scene_unit=False,ascii=False,use_mesh_modifiers=True,batch_mode="OFF")
-
-#Shut down the backround blender
-bpy.ops.wm.quit_blender()
-
-"""
