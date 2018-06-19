@@ -145,9 +145,14 @@ def CarveBoolean(resultName,
                  carverTool,
                  toolPos,
                  toolOrient):
-    
+
+    #NOTE: Two objects of the same type cause errors due
+    #to removal of extra copies
     cTar = bpy.data.objects[0]
     cTool = bpy.data.objects[1]
+
+    #Causes tool to 
+    cTool.rotation_euler = toolOrient
 
     ######## ENSURING THE INTENDED FUNCTIONALITY OF THE BOOLEAN OPERATION BEGINS HERE ######
         
@@ -209,7 +214,8 @@ def CarveBoolean(resultName,
     bpy.context.scene.objects.active = carveTarget
 
     #Apply the boolean modifier
-    bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
+    #bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
+    carvBool.modifier_apply(apply_as='DATA', modifier="Boolean")
 
     #Setup rigid body physics
     bpy.context.object.game.physics_type = 'RIGID_BODY'
@@ -244,6 +250,7 @@ def CarveBoolean(resultName,
 6: str(carveTool.name),         #Name of the carving tool
 7: str(gD['ObjLibraryFolder']), #Full path of the storage folder
 8: saveName]                    #Name of the save file
+
 """
 
 ########### INPUT VALUE REFERENCE ENDS ##############
@@ -259,7 +266,7 @@ saveName = str(sys.argv[8])
 print("objLibPath + saveName: "+str(objLibPath+saveName))
 
 tarObjPath = os.path.join(objLibPath,carveTarName+".blend")
-toolPath = os.path.join(objLibPath,"ArchetypeCylinder.blend")
+toolPath = os.path.join(objLibPath,carveToolName+".blend")
 
 #for i in sys.argv:
 #    print("sys.argv["+str(sys.argv.index(i))+"]: "+str(i))
@@ -290,6 +297,8 @@ toolFaces = loadedObj["toolFaces"]
 targOrient = loadedObj["targetOrientation"]
 toolOrient = loadedObj["toolOrientation"]
 
+print("TOOL ORIENTATION: "+str(toolOrient))
+
 toolPos = loadedObj["toolDistance"]
 
 #Locally store the arguments according to the input given by BooleanCarve.py
@@ -299,8 +308,7 @@ carTarg = CreateObjectOnScene(tarObjPath,targVerts,targFaces,(0,0,0),targOrient)
 #carTarg = CreateObjectOnScene(sys.argv[5],targVerts,targFaces,(0,0,0),targOrient)
 
 #Create the carver
-#TODO: Change the value (0.5,0,0) to use input given by the bge
-carver = CreateObjectOnScene(toolPath,toolVerts,toolFaces,(0.5,0,0),toolOrient)
+carver = CreateObjectOnScene(toolPath,toolVerts,toolFaces,toolPos,toolOrient)
 #carver = CreateObjectOnScene(sys.argv[6],toolVerts,toolFaces,(0.5,0,0),toolOrient)
 
 
