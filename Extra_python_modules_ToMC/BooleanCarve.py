@@ -7,235 +7,181 @@ import os
 import time
 import random
 import pickle
+import bmesh
+from mathutils import Vector as Ve
+from mathutils import Euler as Eu
 
+#TODO: Add the union boolean option and the respective
+#input from BGE side
 
-"""
-#Go through the polygon strings
-for fa in faces:
-    #Remove the rest of the unnecessary characters and turn
-    #the end result into a list
-    fa = fa.replace("(","").replace(")","").replace(" ","").strip("'").split(",")
-
-    #Turn the lists into tuples which contain integers
-    finalFaces.append(tuple(map(int,fa)))
-"""
-
-def CreateObjectOnScene(objName,objVerts,objFaces,position,orient):
-
-    print("objName: "+str(objName))
-    print("objVerts: "+str(objVerts))
-    print("objFaces: "+str(objFaces))
-    print("position: "+str(position))
-    print("orient: "+str(orient))
-
-
-    #Save name core comes from Blender as an argument
-    saveNameFrame = objName
-
-    #Add the mesh object to the scene at origin
-    bpy.ops.object.add(
-        type = 'MESH',
-        enter_editmode=False,
-        location=position)
-
-    #TODO: Rotate the target mesh accordingly
+def CreateAndBoolean(targName,
+                     targVerts,
+                     targFaces,                     
+                     targOrient,
+                     toolName,
+                     toolVerts,
+                     toolFaces,
+                     toolPosition,
+                     toolOrient,
+                     boolType,
+                     fiName):
     
-    #Store the object in the blender scene
-    #for targeting
-    obj = bpy.context.object
+    #Save name core comes from Blender as an argument
+    saveNameFrame = targName
 
-    #Give the object its name as seen in Blender's
-    #Properties window
-    obj.name = os.path.split(saveNameFrame)[-1].replace(".blend","")
+    #Activate edit mode
+    bpy.ops.object.mode_set(mode='EDIT')
 
-    #Store the object data for targeting
-    me = obj.data
+    #(At this point a sample by CoDEmanX was used as a reference)
+    #https://blenderartists.org/t/stay-in-edit-mode-when-adding-custom-primitive/569202/3
 
-    #Store the current scene to access
-    #the object names
-    sce = bpy.context.scene
+    #Generate a new object within edit mode
+    ob = bpy.context.edit_object
 
-    curObjs = []
-    #Store the names of the scene's objects
-    #for comparison
-    for obNameIter in sce.objects:
-        curObjs.append(obNameIter.name)
+    #Store the object's data into a local variable
+    me = ob.data
 
-    #Change the name of the target mesh
-    #within the scene, check that duplicate names
-    #are not created
+    #Generate a mesh using Blender's internal bmesh module
+    bm = bmesh.from_edit_mesh(me)
 
-    if saveNameFrame+'Mesh' not in curObjs:
-        me.name = os.path.split(saveNameFrame)[-1].replace(".blend","")+'Mesh'        
-    else:
-        me.name = os.path.split(saveNameFrame)[-1].replace(".blend","")+'AltMesh'
+    #TODO: Remove repetitious code
 
-    #Keep the object name list up to date
-    curObjs.append(me.name)
+    targVertexList = []
+    #Iterate through the vertices in the input data
+    for targFaceNums in targFaces:
 
-    #Apply the vertex and face data for the generation
-    me.from_pydata(objVerts, [], objFaces)
+        recTargList = []
+        for targFaceNum in targFaceNums:
 
-    #Call update on the scene
-    #NOTE: possibly not needed, obtained from the INFO window
-    #of Blender in the first place
+            newTargVert = bm.verts.new(targVerts[targFaceNum])
+            recTargList.append(newTargVert)
+
+            targVertexList.append(newTargVert)
+
+        #Form a new face now that the vertices form a connected loop
+        newTargFace = bm.faces.new(recTargList)
+
+        #Add the new face to the list of target faces
+        #targFaceList.append(newTargFace)
+
+    #Remove vertex doubles to prevent interference with boolean
+    #operations
+    #bmesh.ops.remove_doubles(bm,verts = targVertexList,dist = 0.00001)
+       
+    #Update the normals to avoid problems with collision
+    #calculations
+    bm.normal_update()
+
+    #Update Blender on everything new that was set
+    bmesh.update_edit_mesh(me, True, True)
     me.update()
 
-    bpy.ops.object.mode_set(mode='OBJECT')
+    #Create a list into which the tool faces can be stored
+    toolFaceList = []
 
-    #Destination file path of the object library folder to the file path and change the suffix to blend
-    #destFilePath = os.path.join(objName.replace(".pickle",".blend"))
+    toolVertexList = []
     
-    #extra = bpy.data.objects[saveName+str(".001")]
+    #Iterate through the vertices in the input data
+    for toolFaceNums in toolFaces:
 
-    objs = bpy.data.objects
+        recToolList = []
+        for toolFaceNum in toolFaceNums:
+            newToolVert = bm.verts.new(Ve(toolVerts[toolFaceNum])*Eu(toolOrient,"XYZ").to_matrix()+Ve(toolPosition))
 
-    #Select the modified mesh version
-    bpy.data.objects[obj.name].select = True
+            recToolList.append(newToolVert)
 
-    #Activate edit mode
-    bpy.ops.object.mode_set(mode='EDIT')
+            toolVertexList.append(newToolVert)
+            
+        #Form a new face now that the vertices form a connected loop
+        newToolFace = bm.faces.new(recToolList)
 
-    #Remove vertex duplicates
+        #Add the new face to the list of tool faces
+        toolFaceList.append(newToolFace)
+
+    #Merge any double vertices in the tool vertex list
+    #bmesh.ops.remove_doubles(bm,verts = toolVertexList,dist = 0.00001)
+    
+    #Update the normals to avoid problems with collision
+    #calculations
+    bm.normal_update()
+
+    #Update Blender on everything new that was set
+    bmesh.update_edit_mesh(me, True, True)
+    me.update()
+
+    bpy.ops.mesh.select_all(action='SELECT')
+
     bpy.ops.mesh.remove_doubles()
 
-    #Convert all mesh faces to triangles
-    bpy.ops.mesh.quads_convert_to_tris()
+    bpy.ops.mesh.select_all(action='DESELECT')
+
+    #Remove vertex doubles to prevent interference with the boolean operation
     
 
-    #Recalculate the normals of the mesh
-    bpy.ops.mesh.normals_make_consistent()
+    #Deselect all target faces
+    for targVert in targVertexList:
+        try: 
+            targVert.select = False
+        except ReferenceError:
+            pass
 
-    #Deactivate edit mode
-    bpy.ops.object.mode_set(mode='OBJECT')
+    #Select each face in the tool face list
+    for toolFace in toolFaceList:
+        try:
+            toolFace.select = True
+        except ReferenceError:
+            pass
 
-    #If the object in question is the carve target, it's on the scene first
-    if obj.name+".001" in bpy.data.objects:
+    #Run the boolean operation
+    bpy.ops.mesh.intersect_boolean(operation= boolType, use_swap=False, threshold=1e-06)
 
-        #Select the object's unmodified duplicate
-        #which contains all of the game logic
-        objs[obj.name+".001"].select = True
-        
-        bpy.context.scene.objects.active = bpy.data.objects[obj.name+".001"]
-
-        #Copy game properties
-        #TODO: Copy all properties instead of only ObjID
-        bpy.ops.object.game_property_copy(property='ObjID')
     
-        #Copy the logic bricks from the .001 copy to the final object
-        bpy.ops.object.logic_bricks_copy()
+    for toolVertex in toolVertexList:
+        try:
+            toolVertex.select = True
+            del toolVertex
+        except ReferenceError:
+            pass
 
-        #Remove the extra unaltered mesh object which is generated
-        #NOTE: reason for this behavior is unknown
-
-        objs[obj.name+".001"].select = False
-
-        #if obj.name+".001" in objs:
-        objs.remove(objs[obj.name+".001"],True)
-
-    #Finally return the object itself for further alterations 
-
-    return obj
+    #Rename the remaining object according to its file name
 
 
-#Carve target is always created at 0,0,0
-def CarveBoolean(resultName,
-                 carveTarget,
-                 targetOrient,
-                 carverTool,
-                 toolPos,
-                 toolOrient):
+    #Renaming causes concatenation issues
+    bpy.data.objects[targName.replace(".blend","")].name = fiName
 
-    #NOTE: Two objects of the same type cause errors due
-    #to removal of extra copies
-    cTar = bpy.data.objects[0]
-    cTool = bpy.data.objects[1]
-
-    #Causes tool to 
-    cTool.rotation_euler = toolOrient
-
-    ######## ENSURING THE INTENDED FUNCTIONALITY OF THE BOOLEAN OPERATION BEGINS HERE ######
-        
-    #Select the carve target as active
-    carveTarget.select = True
-
-    #Activate edit mode
-    bpy.ops.object.mode_set(mode='EDIT')
     
-    #Convert all mesh faces to triangles
-    bpy.ops.mesh.quads_convert_to_tris()
 
-    #Activate vertex selection
-    bpy.ops.mesh.select_mode(type="VERT")
+#bpy.ops.mesh.normals_make_consistent()
 
-    #Select all faces of the carve target mesh
-    bpy.ops.mesh.select_all(action='TOGGLE')
+#Remove the tool bmesh vertices, since they are no longer needed
 
-    #Recalculate normals of the carve target
-    bpy.ops.mesh.normals_make_consistent()
+#TODO: Separate into different objects by loose parts
 
-    #Deactivate edit mode
-    bpy.ops.object.mode_set(mode='OBJECT')
+#bpy.ops.mesh.separate(type='LOOSE')
 
-    #Select the carve tool
-    carverTool.select = True
-    carveTarget.select = False
+#TODO: Copy logic bricks and game properties to the newly created loose parts
 
-    #Activate edit mode
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_mode(type="VERT")
+#TODO: Generate a name for each separated part
 
-    #Select all faces of the carve target mesh
-    bpy.ops.mesh.select_all(action='TOGGLE')
+#TODO: Store each part of the shattered object as its own blend file
+
+#TODO: Remove each loose part except for one from the scene
+
+#fiName = os.path.split(saveName)[1].replace(".pickle",".blend")
+#blendSavePath = os.path.join(objLibPath,fiName)
+
+#Save the current open file
+#bpy.ops.wm.save_as_mainfile(filepath=fiName, check_existing=False, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
+
+### TEST ENDS ###
+
+#Finally return the object itself for further alterations 
+
+#return obj
+
+######## ENSURING THE INTENDED FUNCTIONALITY OF THE BOOLEAN OPERATION ENDS HERE ######
+
     
-    #Recalculate normals of the carve tool
-    bpy.ops.mesh.normals_make_consistent()  
-    
-    #Deactivate edit mode
-    bpy.ops.object.mode_set(mode='OBJECT')
-
-    ######## ENSURING THE INTENDED FUNCTIONALITY OF THE BOOLEAN OPERATION ENDS HERE ######
-    
-    #Create a new boolean modifier named Boolean
-    carvBool = cTar.modifiers.new("Boolean","BOOLEAN")
-
-    #Choose the boolean type to remove the intersecting volume of
-    #carvertool from carveTarget
-    
-    carvBool.operation = 'DIFFERENCE'
-    
-    #Apply the role of the carverTool in the operation
-    carvBool.object = cTool #str(carveTool)
-        
-    #Change the boolean solver to Carve    
-    carvBool.solver = 'CARVE'
-
-    #Explicitly select the carveTarget for applying the boolean modifier
-    bpy.context.scene.objects.active = carveTarget
-
-    #Apply the boolean modifier
-    #bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Boolean")
-    carvBool.modifier_apply(apply_as='DATA', modifier="Boolean")
-
-    #Setup rigid body physics
-    bpy.context.object.game.physics_type = 'RIGID_BODY'
-
-    #Activate collision bounds
-    bpy.context.object.game.use_collision_bounds = True
-
-    #Use triangle mesh
-    bpy.context.object.game.collision_bounds_type = 'TRIANGLE_MESH'
-    
-    print("Applied boolean modified with carveTarget at "+str(carveTarget.location)+" and carve tool at "+str(carverTool.location))
-
-    #Select the carverTool object    
-    carverTool.select = True
-
-    #Deselect carve target
-    carveTarget.select = False
-
-    #Remove the carverTool
-    bpy.ops.object.delete(use_global=False)
 
 ########## INPUT VALUE REFERENCE STARTS ############
 
@@ -253,7 +199,11 @@ def CarveBoolean(resultName,
 
 """
 
+boolType = 'DIFFERENCE'
+
 ########### INPUT VALUE REFERENCE ENDS ##############
+
+
 
 ##### RUNNING THE FUNCTIONS STARTS HERE ########
 
@@ -297,30 +247,26 @@ toolFaces = loadedObj["toolFaces"]
 targOrient = loadedObj["targetOrientation"]
 toolOrient = loadedObj["toolOrientation"]
 
-print("TOOL ORIENTATION: "+str(toolOrient))
+#print("TOOL ORIENTATION: "+str(toolOrient))
 
 toolPos = loadedObj["toolDistance"]
 
 #Locally store the arguments according to the input given by BooleanCarve.py
 
-#Create the carve target object at origo
-carTarg = CreateObjectOnScene(tarObjPath,targVerts,targFaces,(0,0,0),targOrient)
-#carTarg = CreateObjectOnScene(sys.argv[5],targVerts,targFaces,(0,0,0),targOrient)
-
-#Create the carver
-carver = CreateObjectOnScene(toolPath,toolVerts,toolFaces,toolPos,toolOrient)
-#carver = CreateObjectOnScene(sys.argv[6],toolVerts,toolFaces,(0.5,0,0),toolOrient)
-
-
-carvedObject = CarveBoolean(saveName,
-                            carTarg,
-                            targOrient,
-                            carver,
-                            toolPos,
-                            toolOrient)
-
 fiName = os.path.split(saveName)[1].replace(".pickle",".blend")
 blendSavePath = os.path.join(objLibPath,fiName)
+
+CreateAndBoolean(carveTarName,
+                 targVerts,
+                 targFaces,                 
+                 targOrient,
+                 carveToolName,
+                 toolVerts,
+                 toolFaces,
+                 toolPos,
+                 toolOrient,
+                 boolType,
+                 fiName)
 
 #Save the current open file
 bpy.ops.wm.save_as_mainfile(filepath=blendSavePath, check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
