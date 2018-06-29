@@ -46,57 +46,46 @@ def CreateAndBoolean(targName,
 
     #TODO: Remove repetitious code
 
-    targVertexList = []
-    #Iterate through the vertices in the input data
-    for targFaceNums in targFaces:
+    #A list to check whether a face has already
+    #been added to the target-tool combination
+    #omniFaceList = []
 
-        recTargList = []
-        for targFaceNum in targFaceNums:
-
-            newTargVert = bm.verts.new(targVerts[targFaceNum])
-            recTargList.append(newTargVert)
-
-            targVertexList.append(newTargVert)
-
-        #Form a new face now that the vertices form a connected loop
-        newTargFace = bm.faces.new(recTargList)
-
-        #Add the new face to the list of target faces
-        #targFaceList.append(newTargFace)
-
-    #Remove vertex doubles to prevent interference with boolean
-    #operations
-    #bmesh.ops.remove_doubles(bm,verts = targVertexList,dist = 0.00001)
-       
-    #Update the normals to avoid problems with collision
-    #calculations
-    bm.normal_update()
-
-    #Update Blender on everything new that was set
-    bmesh.update_edit_mesh(me, True, True)
-    me.update()
+    
 
     #Create a list into which the tool faces can be stored
     toolFaceList = []
 
     toolVertexList = []
+
     
+
     #Iterate through the vertices in the input data
     for toolFaceNums in toolFaces:
 
         recToolList = []
         for toolFaceNum in toolFaceNums:
-            newToolVert = bm.verts.new(Ve(toolVerts[toolFaceNum])*Eu(toolOrient,"XYZ").to_matrix()+Ve(toolPosition))
-
+            #newToolVert = bm.verts.new((Ve(toolVerts[toolFaceNum])+Ve(toolPosition))*Eu(toolOrient,"XYZ").to_matrix())
+            #newToolVert = bm.verts.new(Ve(toolVerts[toowwlFaceNum])*Eu(toolOrient,"XYZ").to_matrix()+Ve(toolPosition))
+            #newToolVert = bm.verts.new((Ve(toolVerts[toolFaceNum])+Ve(toolPosition))*Eu(toolOrient,"XYZ").to_matrix())
+            #newToolVert = bm.verts.new(Ve(toolVerts[toolFaceNum])*Eu(toolOrient,"XYZ").to_matrix()+Ve(toolPosition)*Eu(targOrient,"XYZ").to_matrix())
+            newToolVert = bm.verts.new(Ve(toolVerts[toolFaceNum])*Eu(toolOrient,"XYZ").to_matrix().inverted()+Ve(toolPosition))
+            
             recToolList.append(newToolVert)
 
             toolVertexList.append(newToolVert)
             
         #Form a new face now that the vertices form a connected loop
+
+        #if recToolList not in omniFaceList:
         newToolFace = bm.faces.new(recToolList)
+        #omniFaceList.append(recToolList)
 
         #Add the new face to the list of tool faces
         toolFaceList.append(newToolFace)
+
+    print("toolVertexList length: "+str(len(toolVertexList)))
+
+    
 
     #Merge any double vertices in the tool vertex list
     #bmesh.ops.remove_doubles(bm,verts = toolVertexList,dist = 0.00001)
@@ -108,46 +97,179 @@ def CreateAndBoolean(targName,
     #Update Blender on everything new that was set
     bmesh.update_edit_mesh(me, True, True)
     me.update()
+    
+    targFaceList = []
+
+    targVertexList = []
+    
+    """
+    
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.mesh.normals_make_consistent()
+
+    bpy.ops.mesh.select_all(action='DESELECT')
+
+    """
+
+    #Remove vertex doubles to prevent interference with boolean
+    #operations
+    #bmesh.ops.remove_doubles(bm,verts = targVertexList,dist = 0.00001)
+       
+    
+    
+
+    #For some reason Blender takes along vertices of both tool and target
+    #when storing the vertices of the tool
+    
+    
+
+    
+    #Cut tool reconstruction from here
+
+    """
+    bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.mesh.select_all(action='SELECT')
 
     bpy.ops.mesh.remove_doubles()
+    bpy.ops.mesh.normals_make_consistent()
 
     bpy.ops.mesh.select_all(action='DESELECT')
 
-    #Remove vertex doubles to prevent interference with the boolean operation
-    
+    """
 
+    #Remove vertex doubles to prevent interference with the boolean operation
+
+    """
     #Deselect all target faces
     for targVert in targVertexList:
         try: 
             targVert.select = False
         except ReferenceError:
             pass
+    """
 
     #Select each face in the tool face list
+    #remainingToolFaces = []
     for toolFace in toolFaceList:
         try:
             toolFace.select = True
+            #remainingToolFaces.append(toolFace)
         except ReferenceError:
             pass
+    
+    #bmesh.ops.reverse_faces(bm, faces=remainingToolFaces)
 
-    #Run the boolean operation
-    bpy.ops.mesh.intersect_boolean(operation= boolType, use_swap=False, threshold=1e-06)
+    bpy.ops.mesh.select_all(action="INVERT")
+
+    bpy.ops.mesh.delete(type='FACE')
+
+
+    #Iterate through the vertices in the input data
 
     
+    
+    for targFaceNums in targFaces:
+
+        recTargList = []
+        
+        for targFaceNum in targFaceNums:
+
+            #newTargVert = bm.verts.new(targVerts[targFaceNum]) #*Eu(toolOrient,"XYZ").to_matrix())
+            newTargVert = bm.verts.new(Eu(targOrient,"XYZ").to_matrix()*Ve(targVerts[targFaceNum]))
+            recTargList.append(newTargVert)
+
+            targVertexList.append(newTargVert)
+
+        #if recTargList not in omniFaceList:
+            
+        #Form a new face now that the vertices form a connected loop
+        newTargFace = bm.faces.new(recTargList)
+
+        #Add the new face to the list of target faces
+        targFaceList.append(newTargFace)
+        #omniFaceList.append(recTargList)
+
+    bpy.ops.mesh.select_all(action='DESELECT')
+
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.mesh.normals_make_consistent()
+
+    bpy.ops.mesh.select_all(action='DESELECT')
+
+    """
+    
+
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.mesh.normals_make_consistent()
+
+    
+    """
+    
+    #print(dir(toolVertex))
+
     for toolVertex in toolVertexList:
         try:
             toolVertex.select = True
-            del toolVertex
+            
+            #del toolVertex
         except ReferenceError:
             pass
+    
+    #Update the normals to avoid problems with collision
+    #calculations
+    #bm.normal_update()
 
-    #Rename the remaining object according to its file name
+    #Update Blender on everything new that was set
+    #bmesh.update_edit_mesh(me, True, True)
+    #me.update()
 
+    #Update the normals to avoid problems with collision
+    #calculations
+    bm.normal_update()
 
-    #Renaming causes concatenation issues
-    bpy.data.objects[targName.replace(".blend","")].name = fiName
+    #Update Blender on everything new that was set
+    bmesh.update_edit_mesh(me, True, True)
+    me.update()
+
+    #bpy.context.scene.update()
+    
+    #Run the boolean operation
+    bpy.ops.mesh.intersect_boolean(operation= boolType, use_swap=False, threshold=1e-06)
+        
+    #print("Raarpaapra "+str(laa))
+
+    #Remove double vertices and recreate faces to iron out
+    #escalating mesh bugs
+    """
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.mesh.normals_make_consistent()
+
+    bpy.ops.mesh.select_all(action='DESELECT')
+    """
+    #Add a remesh operation to the object to fix any breakage
+ 
+    """
+    bpy.ops.object.modifier_add(type='REMESH')
+    bpy.context.object.modifiers["Remesh"].use_remove_disconnected = False
+    bpy.context.object.modifiers["Remesh"].octree_depth = 5
+    bpy.ops.object.mode_set(mode='OBJECT')
+    bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Remesh")
+
+    #Decimate the mesh to avoid trouble from unneeded mesh complexity
+    bpy.ops.object.modifier_add(type='DECIMATE')
+    bpy.context.object.modifiers["Decimate"].decimate_type = 'DISSOLVE'
+    bpy.ops.object.modifier_apply(apply_as='DATA', modifier="Decimate")
+    """
+
+    #Rename the object for further iterations
+    bpy.data.objects[targName.replace(".blend","")].name = fiName.replace(".blend","")
 
     
 
@@ -239,6 +361,10 @@ with open(picklePath,"rb") as handle:
 targVerts = loadedObj["targVerts"]
 targFaces = loadedObj["targFaces"]
 
+#targVerts = []
+#targFaces = []
+
+
 #Retrieve the vertices and faces of the tool object from the pickle file
 toolVerts = loadedObj["toolVerts"]
 toolFaces = loadedObj["toolFaces"]
@@ -250,6 +376,7 @@ toolOrient = loadedObj["toolOrientation"]
 #print("TOOL ORIENTATION: "+str(toolOrient))
 
 toolPos = loadedObj["toolDistance"]
+
 
 #Locally store the arguments according to the input given by BooleanCarve.py
 
