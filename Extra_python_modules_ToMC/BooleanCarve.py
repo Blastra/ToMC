@@ -102,13 +102,14 @@ def CreateAndBoolean(targName,
 
     targVertexList = []
     
-    """
     
-    bpy.ops.mesh.select_all(action='SELECT')
+    
+    #bpy.ops.mesh.select_all(action='SELECT')
 
     bpy.ops.mesh.remove_doubles()
     bpy.ops.mesh.normals_make_consistent()
 
+    """
     bpy.ops.mesh.select_all(action='DESELECT')
 
     """
@@ -142,14 +143,14 @@ def CreateAndBoolean(targName,
 
     #Remove vertex doubles to prevent interference with the boolean operation
 
-    """
+    
     #Deselect all target faces
     for targVert in targVertexList:
         try: 
             targVert.select = False
         except ReferenceError:
             pass
-    """
+    
 
     #Select each face in the tool face list
     #remainingToolFaces = []
@@ -162,15 +163,22 @@ def CreateAndBoolean(targName,
     
     #bmesh.ops.reverse_faces(bm, faces=remainingToolFaces)
 
-    bpy.ops.mesh.select_all(action="INVERT")
+    #bpy.ops.mesh.select_all(action="INVERT")
 
-    bpy.ops.mesh.delete(type='FACE')
+    #bpy.ops.mesh.delete(type='FACE')
 
+    #bpy.ops.mesh.select_all(action='DESELECT')
+
+    #bpy.ops.mesh.select_all(action='SELECT')
+
+    #toolMesh = bpy.data.meshes[0]
+
+    #remainingToolVerts = list(filter(lambda v: v.select, toolMesh.vertices))
 
     #Iterate through the vertices in the input data
 
-    
-    
+    """
+       
     for targFaceNums in targFaces:
 
         recTargList = []
@@ -192,6 +200,9 @@ def CreateAndBoolean(targName,
         targFaceList.append(newTargFace)
         #omniFaceList.append(recTargList)
 
+    """
+
+    """
     bpy.ops.mesh.select_all(action='DESELECT')
 
     bpy.ops.mesh.select_all(action='SELECT')
@@ -199,11 +210,21 @@ def CreateAndBoolean(targName,
     bpy.ops.mesh.remove_doubles()
     bpy.ops.mesh.normals_make_consistent()
 
-    bpy.ops.mesh.select_all(action='DESELECT')
-
-    """
     
+    
+    bpy.ops.mesh.select_all(action='INVERT')
 
+    bpy.ops.mesh.remove_doubles()
+    bpy.ops.mesh.normals_make_consistent()
+
+    bpy.ops.mesh.select_all(action='INVERT')
+    
+    #bpy.ops.mesh.select_all(action='INVERT')
+
+    #bpy.ops.mesh.select_all(action='DESELECT')
+
+    
+    
     bpy.ops.mesh.remove_doubles()
     bpy.ops.mesh.normals_make_consistent()
 
@@ -212,6 +233,8 @@ def CreateAndBoolean(targName,
     
     #print(dir(toolVertex))
 
+    """
+
     for toolVertex in toolVertexList:
         try:
             toolVertex.select = True
@@ -219,6 +242,12 @@ def CreateAndBoolean(targName,
             #del toolVertex
         except ReferenceError:
             pass
+
+    """
+
+    #bpy.ops.mesh.select_all(action='INVERT')
+
+    #bpy.ops.mesh.delete(type='FACE')
     
     #Update the normals to avoid problems with collision
     #calculations
@@ -230,23 +259,29 @@ def CreateAndBoolean(targName,
 
     #Update the normals to avoid problems with collision
     #calculations
+    """
     bm.normal_update()
 
     #Update Blender on everything new that was set
     bmesh.update_edit_mesh(me, True, True)
     me.update()
-
+    """
+    
     #bpy.context.scene.update()
+    #bpy.data.scenes[0].update()
+
+    #for toolVertex in remainingToolVerts:
+    #    toolVertex.select = True        
     
     #Run the boolean operation
-    bpy.ops.mesh.intersect_boolean(operation= boolType, use_swap=False, threshold=1e-06)
+    #bpy.ops.mesh.intersect_boolean(operation= boolType, use_swap=False, threshold=1e-06)
         
     #print("Raarpaapra "+str(laa))
 
     #Remove double vertices and recreate faces to iron out
     #escalating mesh bugs
     """
-    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.select_all(action='INVERT')
 
     bpy.ops.mesh.remove_doubles()
     bpy.ops.mesh.normals_make_consistent()
