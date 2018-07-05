@@ -260,10 +260,14 @@ def CreateAndBoolean(targName,
     bpy.context.scene.objects.active = objs[carTargName]
     
     #Move the carve tool to its correct position and orientation
-
+    
     #Use the bool tool carve
 
-    bpy.ops.btool.auto_difference(solver='CARVE')
+    if boolType == 'DIFFERENCE':
+        bpy.ops.btool.auto_difference(solver='CARVE')
+
+    if boolType == 'UNION':
+        bpy.ops.btool.auto_union(solver='CARVE')
 
     #Return to edit mode, select all vertices and recalculate
     #normals after the carving operation is finished
@@ -344,8 +348,6 @@ def CreateAndBoolean(targName,
         #Remove the old object from the scene
         objs.remove(bpy.data.objects[oldObjName],True)
 
-    print("OLDOBJNAME: "+str(oldObjName))
-
     bpy.data.meshes[carTargObj.name].name = huskName
 
     
@@ -363,11 +365,12 @@ def CreateAndBoolean(targName,
 6: str(carveTool.name),         #Name of the carving tool
 7: str(gD['ObjLibraryFolder']), #Full path of the storage folder
 8: saveNamePrefix,              #Save file name wihtout the generated numbers
-9: saveNameSuffix]              #Save name date, random number and .pickle
+9: saveNameSuffix,              #Save name date, random number and .pickle
+10:boolType]                    #Boolean operation type, "DIFFERENCE" or "UNION"
 
 """
 
-boolType = 'DIFFERENCE'
+
 
 ########### INPUT VALUE REFERENCE ENDS ##############
 
@@ -382,6 +385,8 @@ objLibPath = str(sys.argv[7])
 saveNamePrefix = str(sys.argv[8])
 saveNameSuffix = str(sys.argv[9])
 
+boolType = str(sys.argv[10])
+
 print("objLibPath + saveName: "+str(objLibPath+saveNamePrefix+saveNameSuffix))
 
 
@@ -389,7 +394,8 @@ print("objLibPath + saveName: "+str(objLibPath+saveNamePrefix+saveNameSuffix))
 tarObjPath = os.path.join(objLibPath,carveTarName+".blend")
 toolPath = os.path.join(objLibPath,carveToolName+".blend")
 
-picklePath = os.path.join(str(sys.argv[7]),"GeneratedPickles",saveNamePrefix+saveNameSuffix)
+#picklePath = os.path.join(str(sys.argv[7]),"GeneratedPickles",saveNamePrefix+saveNameSuffix)
+picklePath = os.path.join(str(sys.argv[7]),saveNamePrefix+saveNameSuffix)
 
 print("picklePath: "+str(picklePath))
 
@@ -419,7 +425,17 @@ toolPos = loadedObj["toolDistance"]
 #Locally store the arguments according to the input given by BooleanCarve.py
 
 fiName = os.path.split(saveNamePrefix+saveNameSuffix)[1].replace(".pickle",".blend")
-blendSavePath = os.path.join(objLibPath,fiName)
+
+#Reverse two steps
+storedFileName = os.path.split(picklePath)[1]
+pickleDirBase = os.path.split(picklePath)[0]
+worldNameBase = os.path.split(pickleDirBase)[0]
+
+fiName = os.path.join(worldNameBase,storedFileName).replace(".pickle",".blend")
+
+#print("FINAME: "+str(fiName))
+
+#blendSavePath = os.path.join(objLibPath,fiName)
 
 CreateAndBoolean(carveTarName,
                  targVerts,
@@ -436,7 +452,7 @@ CreateAndBoolean(carveTarName,
                  saveNameSuffix)
 
 #Save the current open file
-bpy.ops.wm.save_as_mainfile(filepath=blendSavePath, check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
+bpy.ops.wm.save_as_mainfile(filepath=fiName, check_existing=True, filter_blender=True, filter_backup=False, filter_image=False, filter_movie=False, filter_python=False, filter_font=False, filter_sound=False, filter_text=False, filter_btx=False, filter_collada=False, filter_folder=True, filter_blenlib=False, filemode=8, display_type='DEFAULT', sort_method='FILE_SORT_ALPHA', compress=False, relative_remap=True, copy=False, use_mesh_compat=False)
 
 #Remove the pickle file from ObjectLibrary
 #os.remove(picklePath)
