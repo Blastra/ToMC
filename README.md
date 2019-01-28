@@ -3,7 +3,9 @@ ToMC
 
 Tools of Mass Creation
 
-NOTE: Currently server functionality achieved only on Linux.
+NOTE: PROJECT HAS MOVED TO GITLAB
+
+NOTE2: Currently server functionality achieved only on Linux.
 
 The server must have the ports 8098, 8099 and 9001 open to be able to host a
 game.
